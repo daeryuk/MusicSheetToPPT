@@ -134,6 +134,5 @@ def open_browser():
 
 if __name__ == '__main__':
     if os.environ.get('ENV') != 'CLOUD':
-        from threading import Timer
         Timer(1, open_browser).start()
     app.run(debug=True, use_reloader=False) # reloader 비활성화
