@@ -75,6 +75,7 @@ function displayResults() {
                     ''}
             </div>
             <textarea class="lyrics-editor w-full p-2 border rounded" 
+                    id="lyricsEditor" name="lyricsEditor"
                     onchange="updateLyrics('${song}', this.value)">${data.lyrics || '가사 정보를 불러올 수 없습니다.'}</textarea>
         </div>
     `).join('');
