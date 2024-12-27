@@ -79,7 +79,6 @@ function displayResults() {
         </div>
     `).join('');
 }
-
 // 제목 수정 가능하게 만들기
 function makeEditable(element) {
     const originalTitle = element.textContent;
@@ -89,18 +88,23 @@ function makeEditable(element) {
     
     input.onblur = function() {
         const newTitle = input.value.trim();
+        
         if (newTitle && newTitle !== originalTitle) {
+            // 기존 제목을 업데이트
             const oldTitle = element.dataset.originalTitle;
-            lyricsData[newTitle] = lyricsData[oldTitle];
+
+            // lyricsData에 기존 제목을 새 제목으로 덮어쓰기
+            lyricsData[newTitle] = lyricsData[oldTitle]; 
             delete lyricsData[oldTitle];
+
             element.textContent = newTitle;
             element.dataset.originalTitle = newTitle;
-            updateSortableList();
+            updateSortableList(); // 제목 변경 후 목록 업데이트
         } else {
             element.textContent = originalTitle;
         }
     };
-    
+
     input.onkeypress = function(e) {
         if (e.key === 'Enter') {
             input.blur();
@@ -118,9 +122,11 @@ function updateLyrics(song, newLyrics) {
     if (!lyricsData[song]) {
         lyricsData[song] = { lyrics: '' };
     }
+
     lyricsData[song].lyrics = newLyrics;
-    updateSortableList();
+    updateSortableList();  // 가사 업데이트 후 목록을 새로 그리기
 }
+
 
 // 정렬 가능한 목록 업데이트
 function updateSortableList() {
