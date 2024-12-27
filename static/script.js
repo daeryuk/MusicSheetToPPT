@@ -114,6 +114,10 @@ function makeEditable(element) {
 
 // 가사 업데이트
 function updateLyrics(song, newLyrics) {
+    // 노래가 lyricsData에 없다면 초기화
+    if (!lyricsData[song]) {
+        lyricsData[song] = { lyrics: '' };
+    }
     lyricsData[song].lyrics = newLyrics;
     updateSortableList();
 }
