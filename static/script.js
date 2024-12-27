@@ -75,7 +75,7 @@ function displayResults() {
                     ''}
             </div>
             <textarea class="lyrics-editor w-full p-2 border rounded" 
-                    onchange="updateLyrics('${song}', this.value)">${data.lyrics}</textarea>
+                    onchange="updateLyrics('${song}', this.value)">${data.lyrics || '가사 정보를 불러올 수 없습니다.'}</textarea>
         </div>
     `).join('');
 }
@@ -141,7 +141,7 @@ async function createPPT() {
         const title = el.querySelector('span:last-child').textContent;
         return {
             title: title,
-            lyrics: lyricsData[title].lyrics
+            lyrics: lyricsData[title]?.lyrics || "가사 정보를 불러올 수 없습니다."  // lyrics가 없다면 기본값 설정
         };
     });
 
