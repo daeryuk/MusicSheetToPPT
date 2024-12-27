@@ -124,15 +124,16 @@ def generate_ppt():
     return jsonify({'success': True, 'path': ppt_path})
 
 def open_browser():
-    try:
-        chrome_path = "C:/Program Files/Google/Chrome/Application/chrome.exe"
-        webbrowser.register('chrome', None, webbrowser.BackgroundBrowser(chrome_path))
-        # Flask가 실행될 경우에만 실행
-        if not webbrowser.get('chrome').open_new("http://127.0.0.1:5000/"):
-            print("Chrome 브라우저를 실행하는 데 실패했습니다.")
-    except Exception as e:
-        print(f"Chrome 브라우저를 열 수 없습니다: {e}")
+    if os.environ.get('ENV') != 'CLOUD':
+        try:
+            chrome_path = "C:/Program Files/Google/Chrome/Application/chrome.exe"
+            webbrowser.register('chrome', None, webbrowser.BackgroundBrowser(chrome_path))
+            webbrowser.get('chrome').open_new("http://127.0.0.1:5000/")
+        except Exception as e:
+            print(f"Chrome 브라우저를 열 수 없습니다: {e}")
 
 if __name__ == '__main__':
-    Timer(1, open_browser).start()
-    app.run(debug=True, use_reloader=False)  # reloader 비활성화
+    if os.environ.get('ENV') != 'CLOUD':
+        from threading import Timer
+        Timer(1, open_browser).start()
+    app.run(debug=True, use_reloader=False) # reloader 비활성화
