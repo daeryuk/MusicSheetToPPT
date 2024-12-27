@@ -1,0 +1,63 @@
+/* 기본 스타일 */
+.song-container {
+    transition: all 0.3s ease;
+}
+
+.lyrics-editor {
+    min-height: 100px;
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    resize: vertical;
+}
+
+.sortable-handle {
+    cursor: move;
+    user-select: none;
+    padding: 0 0.5rem;
+}
+
+/* 제목 수정 관련 스타일 */
+.editable-title {
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+}
+
+.editable-title:hover {
+    background-color: #f3f4f6;
+}
+
+.editable-title input {
+    background: none;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: inherit;
+    font-weight: inherit;
+    width: 100%;
+}
+
+/* 드래그 앤 드롭 관련 스타일 */
+.sortable-ghost {
+    opacity: 0.5;
+    background-color: #f3f4f6;
+}
+
+.sortable-chosen {
+    background-color: #ffffff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 640px) {
+    .song-container {
+        padding: 1rem;
+    }
+    
+    .lyrics-editor {
+        min-height: 80px;
+    }
+}
