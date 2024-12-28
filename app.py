@@ -112,7 +112,7 @@ def generate_ppt():
             pptx_buffer,
             mimetype='application/vnd.openxmlformats-officedocument.presentationml.presentation',
             as_attachment=True,
-            download_name='worship_lyrics.pptx'
+            download_name='lyrics.pptx'
         )
     except Exception as e:
         print(f"PPT 생성 중 에러 발생: {str(e)}")

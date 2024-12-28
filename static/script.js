@@ -133,7 +133,7 @@ async function createPPT() {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'worship_lyrics.pptx';
+        link.download = 'lyrics.pptx';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
