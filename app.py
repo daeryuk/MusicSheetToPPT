@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 import requests
 from bs4 import BeautifulSoup
 from pptx import Presentation
@@ -8,16 +8,20 @@ import os
 import re
 import webbrowser
 from threading import Timer
+from io import BytesIO
 
 app = Flask(__name__)
 
 def clean_lyrics(lyrics):
+    # _x000D_ 를 실제 줄바꿈으로 변환
+    cleaned = lyrics.replace('_x000D_', '\n')
     # 불필요한 문자 및 패턴 제거
-    cleaned = lyrics.replace('_x000D_', '\n')  # _x000D_ 를 줄바꿈으로 변환
     cleaned = re.sub(r'^[•●■□○\-\*]\s*', '', cleaned, flags=re.MULTILINE)  # 글머리 기호 제거
     cleaned = re.sub(r'\s*×\d+\s*', '', cleaned)  # ×2, ×3 등의 반복 표시 제거
     cleaned = re.sub(r'[.]{3,}', '', cleaned)  # 점(...) 제거
-    cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)  # 3개 이상의 연속된 줄바꿈을 2개로 통일
+    
+    # 3개 이상의 연속된 줄바꿈을 2개로 통일
+    cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
     
     # 빈 줄만 있는 라인 제거
     lines = [line for line in cleaned.split('\n') if line.strip()]
@@ -53,45 +57,67 @@ def search_lyrics(song_title):
     except:
         return None, None
 
-def create_ppt(lyrics_dict, song_order):
+def create_ppt(song_order, memory_file=True):
+    """
+    PPT 생성 함수
+    Args:
+        song_order: 곡 정보가 담긴 리스트
+        memory_file: True면 BytesIO 객체 반환, False면 파일로 저장
+    """
     prs = Presentation()
-    
+
     for song_idx in song_order:
         song_title = song_idx['title']
-        lyrics = lyrics_dict[song_title]
+        lyrics = song_idx['lyrics']
         
-        # 제목 전용 슬라이드 생성
-        title_slide = prs.slides.add_slide(prs.slide_layouts[0])  # 제목 슬라이드 레이아웃 사용
+        # 제목 슬라이드 생성
+        title_slide = prs.slides.add_slide(prs.slide_layouts[0])
         title = title_slide.shapes.title
         title.text = song_title
         
-        # 제목 슬라이드 스타일링
+        # 제목 스타일 설정
         for paragraph in title.text_frame.paragraphs:
             paragraph.alignment = PP_ALIGN.CENTER
             paragraph.font.size = Pt(44)
 
-        # 의미 있는 줄바꿈을 기준으로 문단 나누기
-        paragraphs = [p.strip() for p in re.split(r'\n{2,}', lyrics.strip()) if p.strip()]
+        # 문단을 분리하여 슬라이드 생성
+        paragraphs = lyrics.split('\n\n')  # 빈 줄을 기준으로 문단 분리
         
-        # 모든 문단을 새로운 슬라이드에 추가
         for paragraph in paragraphs:
-            if paragraph.strip():  # 빈 문단 건너뛰기
-                content_slide = prs.slides.add_slide(prs.slide_layouts[5])  # 빈 레이아웃 사용
-                
-                # 가사를 위한 텍스트박스 추가
+            if paragraph.strip():  # 빈 문단이 아닌 경우에만 슬라이드 생성
+                content_slide = prs.slides.add_slide(prs.slide_layouts[5])
                 text_box = content_slide.shapes.add_textbox(Inches(1), Inches(1), Inches(8), Inches(6))
                 text_frame = text_box.text_frame
-                text_frame.text = paragraph
-                
-                # 가사 텍스트 스타일링
+                text_frame.text = paragraph.strip()
+
+                # 텍스트 스타일 설정
                 for para in text_frame.paragraphs:
                     para.alignment = PP_ALIGN.CENTER
                     para.font.size = Pt(32)
-    
-    output_path = "static/output.pptx"
-    prs.save(output_path)
-    return output_path
 
+    # 메모리에 PPT 파일을 저장하고 반환
+    pptx_buffer = BytesIO()  # 메모리 버퍼 생성
+    prs.save(pptx_buffer)    # PPT를 메모리에 저장
+    pptx_buffer.seek(0)      # 버퍼의 포인터를 처음으로 이동
+    return pptx_buffer       # 메모리에 저장된 PPT 반환
+
+
+@app.route('/create_ppt', methods=['POST'])
+def generate_ppt():
+    try:
+        data = request.json
+        pptx_buffer = create_ppt(data['songOrder'], memory_file=True)
+        
+        return send_file(
+            pptx_buffer,
+            mimetype='application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            as_attachment=True,
+            download_name='worship_lyrics.pptx'
+        )
+    except Exception as e:
+        print(f"PPT 생성 중 에러 발생: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+        
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -116,26 +142,5 @@ def process_lyrics():
     
     return jsonify(results)
 
-@app.route('/create_ppt', methods=['POST'])
-def generate_ppt():
-    data = request.json
-    lyrics_dict = {song['title']: song['lyrics'] for song in data['songOrder']}
-    ppt_path = create_ppt(lyrics_dict, data['songOrder'])
-    return jsonify({'success': True, 'path': ppt_path})
-"""
-def open_browser():
-    try:
-        chrome_path = "C:/Program Files/Google/Chrome/Application/chrome.exe"
-        webbrowser.register('chrome', None, webbrowser.BackgroundBrowser(chrome_path))
-        # Flask가 실행될 경우에만 실행
-        if not webbrowser.get('chrome').open_new("http://127.0.0.1:5000/"):
-            print("Chrome 브라우저를 실행하는 데 실패했습니다.")
-    except Exception as e:
-        print(f"Chrome 브라우저를 열 수 없습니다: {e}")
-
 if __name__ == '__main__':
-    Timer(1, open_browser).start()
-    app.run(debug=True, use_reloader=False)  # reloader 비활성화
-"""
-if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True)    

@@ -65,7 +65,6 @@ function displayResults() {
         <div class="song-container p-4 border rounded">
             <div class="flex items-center justify-between mb-2">
                 <h3 class="text-xl font-semibold editable-title" 
-                    onclick="makeEditable(this)" 
                     data-original-title="${song}">${song}</h3>
                 ${data.url ? 
                     `<a href="${data.url}" target="_blank" 
@@ -80,47 +79,16 @@ function displayResults() {
     `).join('');
 }
 
-// 제목 수정 가능하게 만들기
-function makeEditable(element) {
-    const originalTitle = element.textContent;
-    const input = document.createElement('input');
-    input.value = originalTitle;
-    input.className = 'text-xl font-semibold p-1 border rounded';
-    
-    input.onblur = function() {
-        const newTitle = input.value.trim();
-        if (newTitle && newTitle !== originalTitle) {
-            const oldTitle = element.dataset.originalTitle;
-            lyricsData[newTitle] = lyricsData[oldTitle];
-            delete lyricsData[oldTitle];
-            element.textContent = newTitle;
-            element.dataset.originalTitle = newTitle;
-            updateSortableList();
-        } else {
-            element.textContent = originalTitle;
-        }
-    };
-    
-    input.onkeypress = function(e) {
-        if (e.key === 'Enter') {
-            input.blur();
-        }
-    };
-    
-    element.textContent = '';
-    element.appendChild(input);
-    input.focus();
-}
-
 // 가사 업데이트
 function updateLyrics(song, newLyrics) {
-    // 노래가 lyricsData에 없다면 초기화
     if (!lyricsData[song]) {
         lyricsData[song] = { lyrics: '' };
     }
-    lyricsData[song].lyrics = newLyrics;
+    // 업데이트된 가사 저장
+    lyricsData[song].lyrics = newLyrics.trim();
     updateSortableList();
 }
+
 
 // 정렬 가능한 목록 업데이트
 function updateSortableList() {
@@ -141,13 +109,12 @@ function updateSortableList() {
 // PPT 생성
 async function createPPT() {
     const sortableResults = document.getElementById('sortableResults');
-    const songOrder = Array.from(sortableResults.children).map(el => {
-        const title = el.querySelector('span:last-child').textContent;
-        return {
-            title: title,
-            lyrics: lyricsData[title]?.lyrics || "가사 정보를 불러올 수 없습니다."  // lyrics가 없다면 기본값 설정
-        };
-    });
+    const sortedSongs = Array.from(sortableResults.children).map(el => el.querySelector('span:last-child').textContent);
+    
+    const songOrder = sortedSongs.map(title => ({
+        title: title,
+        lyrics: lyricsData[title]?.lyrics || "가사 정보를 불러올 수 없습니다."
+    }));
 
     try {
         const response = await fetch('/create_ppt', {
@@ -157,13 +124,24 @@ async function createPPT() {
             },
             body: JSON.stringify({ songOrder: songOrder })
         });
-
-        const result = await response.json();
-        if (result.success) {
-            window.location.href = result.path;
+        
+        if (!response.ok) {
+            throw new Error('PPT 생성에 실패했습니다.');
         }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'worship_lyrics.pptx';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
     } catch (error) {
         alert('PPT 생성 중 오류가 발생했습니다.');
+        console.error(error);
     }
 }
 
